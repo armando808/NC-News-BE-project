@@ -36,6 +36,32 @@ describe("GET /api", () => {
     })
 })
 
+describe("GET /api/articles", () => {
+    test("status: 200 responds with array of articles, with comment_count column added and populated correctly, sorted by date, descending order", async () => {
+        const response = await request(app).get("/api/articles")
+        expect(response.status).toBe(200)
+        response.body.articles.forEach((article) => {
+            expect(article).toMatchObject({
+                author: expect.any(String),
+                title: expect.any(String),
+                article_id: expect.any(Number),
+                topic: expect.any(String),
+                created_at: expect.any(String),
+                votes: expect.any(Number),
+                article_img_url: expect.any(String),
+                comment_count: expect.any(String),
+            })
+        })
+        expect(response.body.articles).toBeSortedBy('created_at', { descending: true })
+    })
+    test("status: 404 for bad routes (get request for non existent data)", async () => {
+        const response = await request(app).get("/api/gibberish")
+        expect(response.status).toBe(404)
+        expect(response.body.msg).toBe('Route not found')
+    })
+})
+
+
 describe("GET /api/articles/:article_id", () => {
     test("status: 200 responds with a single article associated with that article ID",
     async () => {
