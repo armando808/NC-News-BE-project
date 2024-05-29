@@ -3,6 +3,7 @@ const seed = require("../db/seeds/seed")
 const testData = require("../db/data/test-data/index")
 const request = require("supertest")
 const app = require("../app")
+const endpoints = require("../endpoints.json")
 
 beforeEach(() => { return seed(testData) })
 afterAll(() => { return db.end() })
@@ -24,5 +25,13 @@ describe("GET /api/topics", () => {
         const response = await request(app).get("/api/gibberish")
         expect(response.status).toBe(404)
         expect(response.body.msg).toBe('Route not found')
+    })
+})
+
+describe("GET /api", () => {
+    test("status: 200 responds with JSON object describing all available endpoints on the api", async () => {
+        const response = await request(app).get("/api")
+        expect(response.status).toBe(200)
+        expect(response.body).toEqual(endpoints)
     })
 })
