@@ -35,3 +35,27 @@ describe("GET /api", () => {
         expect(response.body).toEqual(endpoints)
     })
 })
+
+describe("GET /api/articles/:article_id", () => {
+    test("status: 200 responds with a single article associated with that article ID",
+    async () => {
+        const response = await request(app).get("/api/articles/1")
+        expect(response.status).toBe(200)
+        expect(response.body).toHaveProperty("article")
+        expect(Array.isArray(response.body.article)).toBe(false)
+        expect(response.body.article).toHaveProperty("author");
+        expect(response.body.article).toHaveProperty("title");
+        expect(response.body.article).toHaveProperty("article_id");
+        expect(response.body.article).toHaveProperty("body");
+        expect(response.body.article).toHaveProperty("topic");
+        expect(response.body.article).toHaveProperty("created_at");
+        expect(response.body.article).toHaveProperty("votes");
+        expect(response.body.article).toHaveProperty("article_img_url")
+    })
+
+    test("status: 404 for nonexistent article_id, if route is otherwise ok", async () => {
+        const response = await request(app).get("/api/articles/75")
+        expect(response.status).toBe(404)
+        expect(response.body.msg).toBe('Article not found for article_id: 75')
+    })
+})
