@@ -2,18 +2,33 @@ const db = require("../db/connection")
 
 exports.fetchArticleById = async (article_id) => {
 
-		const article = await db.query(
+	const article = await db.query(
 		`SELECT *
 		FROM articles
 		WHERE article_id = $1;`,
 		[article_id]
 		)
 
-		if (!article.rows.length) {
+	if (!article.rows.length) {
 			return Promise.reject({ status: 404, msg: `Article not found for article_id: ${article_id}` })
         }
-		return article.rows[0]
+	return article.rows[0]
     }
+
+exports.fetchCommentsByArticleId = async (article_id) => {
+    const comments = await db.query(`
+        SELECT *
+        FROM comments
+        WHERE article_id = $1
+        ORDER BY created_at DESC;
+        `,
+        [article_id]
+    )
+    if (!comments.rows.length) {
+        return Promise.reject({ status: 404, msg: `Comments not found for article_id: ${article_id}` })
+    }
+    return comments.rows
+}
 
 exports.fetchArticles = async (req, res, next) => {
     const SQLquery = `

@@ -8,6 +8,7 @@ const endpoints = require("../endpoints.json")
 beforeEach(() => { return seed(testData) })
 afterAll(() => { return db.end() })
 
+
 describe("GET /api/topics", () => {
     test("status: 200 responds with all topics", async () => {
         const response = await request(app).get("/api/topics")
@@ -87,6 +88,35 @@ describe("GET /api/articles/:article_id", () => {
 
     test("status: 400 for invalid requests (eg not a number when searching by article_id)", async () => {
         const response = await request(app).get("/api/articles/invalidID")
+        expect(response.status).toBe(400)
+        expect(response.body.msg).toBe("Bad request")
+    })
+})
+
+describe("GET /api/comments/:article_id", () => {
+    test("status: 200 responds with an array of comments associated with that article (via article_id)",
+    async () => {
+        const response = await request(app).get("/api/articles/1/comments")
+        expect(response.status).toBe(200)
+        response.body.comments.forEach((comment) => {
+            expect(comment).toMatchObject({
+                comment_id: expect.any(Number),
+                votes: expect.any(Number),
+                created_at: expect.any(String),
+                author: expect.any(String),
+                body: expect.any(String),
+                article_id: expect.any(Number),
+            })
+        })
+        expect(response.body.comments).toBeSortedBy('created_at', { descending: true })
+    })
+    test("status: 404 for nonexistent article_id, if route is otherwise ok", async () => {
+        const response = await request(app).get("/api/articles/75/comments")
+        expect(response.status).toBe(404)
+        expect(response.body.msg).toBe('Comments not found for article_id: 75')
+    })
+    test("status: 400 for invalid requests (eg not a number when searching by article_id)", async () => {
+        const response = await request(app).get("/api/articles/invalidID/comments")
         expect(response.status).toBe(400)
         expect(response.body.msg).toBe("Bad request")
     })
