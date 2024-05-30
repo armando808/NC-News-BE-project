@@ -41,21 +41,27 @@ describe("GET /api/articles/:article_id", () => {
     async () => {
         const response = await request(app).get("/api/articles/1")
         expect(response.status).toBe(200)
-        expect(response.body).toHaveProperty("article")
-        expect(Array.isArray(response.body.article)).toBe(false)
-        expect(response.body.article).toHaveProperty("author");
-        expect(response.body.article).toHaveProperty("title");
-        expect(response.body.article).toHaveProperty("article_id");
-        expect(response.body.article).toHaveProperty("body");
-        expect(response.body.article).toHaveProperty("topic");
-        expect(response.body.article).toHaveProperty("created_at");
-        expect(response.body.article).toHaveProperty("votes");
-        expect(response.body.article).toHaveProperty("article_img_url")
+        expect(response.body.article).toMatchObject({
+            author: expect.any(String),
+            title: expect.any(String),
+            article_id: expect.any(Number),
+            body: expect.any(String),
+            topic: expect.any(String),
+            created_at: expect.any(String),
+            votes: expect.any(Number),
+            article_img_url: expect.any(String)
+        });
     })
 
     test("status: 404 for nonexistent article_id, if route is otherwise ok", async () => {
         const response = await request(app).get("/api/articles/75")
         expect(response.status).toBe(404)
         expect(response.body.msg).toBe('Article not found for article_id: 75')
+    })
+
+    test("status: 400 for invalid requests (eg not a number when searching by article_id)", async () => {
+        const response = await request(app).get("/api/articles/invalidID")
+        expect(response.status).toBe(400)
+        expect(response.body.msg).toBe("Bad request")
     })
 })
