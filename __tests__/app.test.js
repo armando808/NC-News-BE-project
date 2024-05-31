@@ -230,3 +230,23 @@ describe("DELETE /api/comments/:comment_id", () => {
         expect(response.body.msg).toBe("Bad request")
     })
 })
+describe("GET /api/users", () => {
+    test("status: 200 responds with all users", async () => {
+        const response = await request(app).get("/api/users")
+        expect(response.status).toBe(200)
+        expect(response.body.users).toHaveLength(4)
+        response.body.users.forEach((user) => {
+            expect(user).toMatchObject({
+                username: expect.any(String),
+                name: expect.any(String),
+                avatar_url: expect.any(String)
+            })
+        })
+    })
+
+    test("status: 404 for bad routes (get request for non existent data)", async () => {
+        const response = await request(app).get("/api/gibberish")
+        expect(response.status).toBe(404)
+        expect(response.body.msg).toBe('Route not found')
+    })
+})
