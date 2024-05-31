@@ -123,7 +123,7 @@ describe("GET /api/comments/:article_id", () => {
 })
 
 describe("POST /api/articles/:article_id/comments", () => {
-    test("status: 201 adds a comment to the associated article (via article_id)", async () => {
+    test("status: 201 adds a comment to the associated article (via article_id), returning updated comment table", async () => {
         const comment = {
             username: "butter_bridge",
             body: "generic comment"
@@ -175,4 +175,38 @@ describe("POST /api/articles/:article_id/comments", () => {
         
         expect(response.body.msg).toBe("Author not found");
     })
+})
+
+describe("POST /api/articles/:article_id/comments", () => {
+    test("status: 200 updates the article by changing the number of votes, responds with updated article object reflecting new vote count", async () => {
+        const voteIncrementsBy = { inc_votes: 1 }
+        const response = await request(app)
+        .patch("/api/articles/1")
+        .send(voteIncrementsBy)
+        .expect(200)
+
+        expect(response.body.article).toMatchObject({
+            title: "Living in the shadow of a great man",
+            topic: "mitch",
+            author: "butter_bridge",
+            body: "I find this existence challenging",
+            created_at: expect.any(String),
+            votes: 101,
+            article_img_url: "https://images.pexels.com/photos/158651/news-newsletter-newspaper-information-158651.jpeg?w=700&h=700"
+        });
+    })
+    test("status: 400 when request does not contain info to change the number of votes (missing inc_votes)", async () => {
+        const response = await request(app)
+        .patch("/api/articles/1")
+        .send({})
+        .expect(400)
+        expect(response.body.msg).toBe("Bad request: inc_votes is missing")
+    })
+    test("status: 404 when article does not exist", async () => {
+        const response = await request(app)
+            .patch("/api/articles/75")
+            .send({ inc_votes: 1 })
+            .expect(404);
+        expect(response.body.msg).toBe("Article not found for article_id: 75");
+    });
 })

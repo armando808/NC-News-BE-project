@@ -1,4 +1,4 @@
-const {fetchArticles, fetchArticleById, fetchCommentsByArticleId, addCommentsByArticleId} = require("../models/articles.models")
+const {fetchArticles, fetchArticleById, fetchCommentsByArticleId, addCommentsByArticleId, incVotesByArticleById} = require("../models/articles.models")
 
 exports.getArticles = async (req, res, next) => {
     try {
@@ -35,6 +35,17 @@ exports.postCommentsByArticleId = async (req, res, next) => {
     try {
         const addedComment = await addCommentsByArticleId(article_id, username, body)
         res.status(201).send({ comment: addedComment })
+    } catch (err) {
+        next(err)
+    }
+}
+
+exports.addVotesByArticleById = async (req, res, next) => {
+    const { article_id } = req.params
+    const { inc_votes } = req.body
+    try {
+        const updatedArticle = await incVotesByArticleById(article_id, inc_votes)
+        res.status(200).send({ article: updatedArticle })
     } catch (err) {
         next(err)
     }
