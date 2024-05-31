@@ -30,8 +30,10 @@ exports.fetchCommentsByArticleId = async (article_id) => {
     return comments.rows
 }
 
-exports.fetchArticles = async () => {
-    const SQLquery = `
+
+exports.fetchArticles = async ({ topic, author, sort_by = "created_at", order = "desc" }) => {
+    const queryValues = []
+    let SQLquery = `
         SELECT 
             author,
             title,
@@ -42,10 +44,16 @@ exports.fetchArticles = async () => {
             article_img_url,
             (SELECT COUNT(*) FROM comments WHERE comments.article_id = articles.article_id) AS comment_count
         FROM articles
-        ORDER BY created_at DESC;
         `
-
-    const result = await db.query(SQLquery)
+    if(topic) {
+        queryValues.push(topic)
+        SQLquery += ` WHERE topic = $1`
+    }
+    SQLquery += ` ORDER BY ${sort_by} ${order};`
+    const result = await db.query(SQLquery, queryValues)
+    if (result.rows.length === 0 && topic) {
+            return Promise.reject({ status: 404, msg: "Topic not found" })
+        }
     return result.rows
 }
 
