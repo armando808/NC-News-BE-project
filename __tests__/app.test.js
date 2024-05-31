@@ -121,3 +121,58 @@ describe("GET /api/comments/:article_id", () => {
         expect(response.body.msg).toBe("Bad request")
     })
 })
+
+describe("POST /api/articles/:article_id/comments", () => {
+    test("status: 201 adds a comment to the associated article (via article_id)", async () => {
+        const comment = {
+            username: "butter_bridge",
+            body: "generic comment"
+        }
+        const response = await request(app)
+        .post("/api/articles/1/comments")
+        .send(comment)
+        .expect(201)
+
+        expect(response.body.comment).toMatchObject({
+            comment_id: expect.any(Number),
+            body: "generic comment",
+            article_id: 1,
+            author: "butter_bridge",
+            votes: 0,
+            created_at: expect.any(String)
+        })
+    })
+    test("status: 400 if missing part of the query eg no username", async () => {
+        const commentNotFinished = {
+            body: "generic comment"
+        }
+        const response = await request(app)
+            .post("/api/articles/1/comments")
+            .send(commentNotFinished)
+            .expect(400)
+        expect(response.body.msg).toBe("Bad request: must include both username and body")
+    })
+    test("status: 404 when article does not exist, but route otherwise fine/valid", async () => {
+        const comment = {
+            username: "butter_bridge",
+            body: "generic comment"
+        };
+        const response = await request(app)
+            .post("/api/articles/75/comments")
+            .send(comment)
+            .expect(404);
+        expect(response.body.msg).toBe("Article not found for article_id: 75");
+    });
+    test("status: 404 when author does not exist", async () => {
+        const comment = {
+            username: "count-chocula",
+            body: "generic comment"
+        }
+        const response = await request(app)
+            .post("/api/articles/1/comments")
+            .send(comment)
+            .expect(404);
+        
+        expect(response.body.msg).toBe("Author not found");
+    })
+})

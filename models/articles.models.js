@@ -30,7 +30,7 @@ exports.fetchCommentsByArticleId = async (article_id) => {
     return comments.rows
 }
 
-exports.fetchArticles = async (req, res, next) => {
+exports.fetchArticles = async () => {
     const SQLquery = `
         SELECT 
             author,
@@ -47,4 +47,32 @@ exports.fetchArticles = async (req, res, next) => {
 
     const result = await db.query(SQLquery)
     return result.rows
+}
+
+exports.addCommentsByArticleId = async (article_id, username, body) => {
+    if(!username || !body) {
+        return Promise.reject({ status: 400, msg: "Bad request: must include both username and body"})
+    }
+    
+    const checkArticle = await db.query(
+            `SELECT * FROM articles WHERE article_id = $1;`,
+            [article_id]
+        )
+    if (!checkArticle.rows.length) {
+            return Promise.reject({ status: 404, msg: `Article not found for article_id: ${article_id}` });
+        }
+    const checkAuthor = await db.query(
+        `SELECT * FROM users WHERE username = $1;`, [username]
+    )
+    if (!checkAuthor.rows.length) {
+        return Promise.reject({ status: 404, msg: 'Author not found' })
+    }
+    const addedComment = await db.query(
+            `INSERT INTO comments (body, author, article_id, votes, created_at)
+            VALUES ($1, $2, $3, 0, NOW())
+            RETURNING *`,
+            [body, username, article_id]
+        )
+        
+    return addedComment.rows[0] 
 }
