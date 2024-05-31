@@ -206,7 +206,27 @@ describe("POST /api/articles/:article_id/comments", () => {
         const response = await request(app)
             .patch("/api/articles/75")
             .send({ inc_votes: 1 })
-            .expect(404);
+            .expect(404)
         expect(response.body.msg).toBe("Article not found for article_id: 75");
     });
+})
+describe("DELETE /api/comments/:comment_id", () => {
+    test("status: 204 deletes specified comment by comment_id, returning nothing", async () => {
+        const response = await request(app)
+        .delete("/api/comments/1")
+        .expect(204)
+        expect(response.body).toEqual({})
+    })
+    test('status: 404 when comment_id does not exist', async () => {
+        const response = await request(app)
+            .delete('/api/comments/9999')
+            .expect(404)
+            expect(response.body.msg).toBe("Comment not found for comment_id: 9999");
+    });
+    test("status: 400 for invalid requests (eg not a number when searching by comment_id)", async () => {
+        const response = await request(app)
+            .delete('/api/comments/invalidId')
+        expect(response.status).toBe(400)
+        expect(response.body.msg).toBe("Bad request")
+    })
 })
