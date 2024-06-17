@@ -61,11 +61,11 @@ exports.fetchArticles = async ({ topic, author, sort_by = "created_at", order = 
         SQLquery += ` WHERE topic = $1`
     }
     SQLquery += ` ORDER BY ${sort_by} ${order};`
-    const result = await db.query(SQLquery, queryValues)
-    if (result.rows.length === 0 && topic) {
+    const articles = await db.query(SQLquery, queryValues)
+    if (articles.rows.length === 0 && topic) {
             return Promise.reject({ status: 404, msg: "Topic not found" })
         }
-    return result.rows
+    return articles.rows
 }
 
 exports.addCommentsByArticleId = async (article_id, username, body) => {

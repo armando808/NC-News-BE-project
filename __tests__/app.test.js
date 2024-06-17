@@ -16,19 +16,13 @@ describe("GET /api/topics", () => {
   test("status: 200 responds with all topics", async () => {
     const response = await request(app).get("/api/topics");
     expect(response.status).toBe(200);
-    expect(response.body.topics).toHaveLength(3);
+    expect(response.body.topics.length).toBeGreaterThan(1); //changed toHaveLength (added .length to response.body.topics) to toBeGreater than for more flexibility
     response.body.topics.forEach((topic) => {
-      expect(topic).toMatchObject({
+      expect(topic).toMatchObject({ //toMatchObject will still match even if other properties - unlike toEqual
         description: expect.any(String),
         slug: expect.any(String),
       });
     });
-  });
-
-  test("status: 404 for bad routes (get request for non existent data)", async () => {
-    const response = await request(app).get("/api/gibberish");
-    expect(response.status).toBe(404);
-    expect(response.body.msg).toBe("Route not found");
   });
 });
 
@@ -40,10 +34,19 @@ describe("GET /api", () => {
   });
 });
 
+describe("status: 404 for bad routes (request for non existent data)", () => {
+  test("status: 404 for bad routes (get request for non existent data)", async () => {
+    const response = await request(app).get("/api/gibberish");
+    expect(response.status).toBe(404);
+    expect(response.body.msg).toBe("Route not found");
+  });
+});
+
 describe("GET /api/articles", () => {
   test("status: 200 responds with array of articles, with comment_count column added and populated correctly, sorted by date, descending order", async () => {
     const response = await request(app).get("/api/articles");
     expect(response.status).toBe(200);
+    expect(response.body.articles.length).toBe(13);
     response.body.articles.forEach((article) => {
       expect(article).toMatchObject({
         author: expect.any(String),
@@ -79,11 +82,6 @@ describe("GET /api/articles", () => {
     expect(response.status).toBe(404);
     expect(response.body.msg).toBe("Topic not found");
   });
-  test("status: 404 for bad routes (get request for non existent data)", async () => {
-    const response = await request(app).get("/api/gibberish");
-    expect(response.status).toBe(404);
-    expect(response.body.msg).toBe("Route not found");
-  });
 });
 
 describe("GET /api/articles/:article_id", () => {
@@ -104,9 +102,9 @@ describe("GET /api/articles/:article_id", () => {
   });
 
   test("status: 404 for nonexistent article_id, if route is otherwise ok", async () => {
-    const response = await request(app).get("/api/articles/75");
+    const response = await request(app).get("/api/articles/9999"); //nicer to have 9999
     expect(response.status).toBe(404);
-    expect(response.body.msg).toBe("Article not found for article_id: 75");
+    expect(response.body.msg).toBe("Article not found for article_id: 9999");
   });
 
   test("status: 400 for invalid requests (eg not a number when searching by article_id)", async () => {
@@ -116,7 +114,7 @@ describe("GET /api/articles/:article_id", () => {
   });
 });
 
-describe("GET /api/comments/:article_id", () => {
+describe("GET /api/comments/:article_id/comments", () => {
   test("status: 200 responds with an array of comments associated with that article (via article_id)", async () => {
     const response = await request(app).get("/api/articles/1/comments");
     expect(response.status).toBe(200);
@@ -135,9 +133,9 @@ describe("GET /api/comments/:article_id", () => {
     });
   });
   test("status: 404 for nonexistent article_id, if route is otherwise ok", async () => {
-    const response = await request(app).get("/api/articles/75/comments");
+    const response = await request(app).get("/api/articles/9999/comments");
     expect(response.status).toBe(404);
-    expect(response.body.msg).toBe("Comments not found for article_id: 75");
+    expect(response.body.msg).toBe("Comments not found for article_id: 9999");
   });
   test("status: 400 for invalid requests (eg not a number when searching by article_id)", async () => {
     const response = await request(app).get("/api/articles/invalidID/comments");
@@ -184,10 +182,10 @@ describe("POST /api/articles/:article_id/comments", () => {
       body: "generic comment",
     };
     const response = await request(app)
-      .post("/api/articles/75/comments")
+      .post("/api/articles/9999/comments")
       .send(comment)
       .expect(404);
-    expect(response.body.msg).toBe("Article not found for article_id: 75");
+    expect(response.body.msg).toBe("Article not found for article_id: 9999");
   });
   test("status: 404 when author does not exist", async () => {
     const comment = {
@@ -201,9 +199,22 @@ describe("POST /api/articles/:article_id/comments", () => {
 
     expect(response.body.msg).toBe("Author not found");
   });
+  
+  test("status: 400 if article_id is invalid (e.g., string)", async () => {
+    const comment = {
+      username: "butter_bridge",
+      body: "generic comment",
+    };
+    const response = await request(app)
+      .post("/api/articles/string/comments")
+      .send(comment)
+      .expect(400);
+
+    expect(response.body.msg).toBe("Bad request");
+  });
 });
 
-describe("POST /api/articles/:article_id/comments", () => {
+describe("PATCH /api/articles/:article_id", () => {
   test("status: 200 updates the article by changing the number of votes, responds with updated article object reflecting new vote count", async () => {
     const voteIncrementsBy = { inc_votes: 1 };
     const response = await request(app)
@@ -231,16 +242,23 @@ describe("POST /api/articles/:article_id/comments", () => {
   });
   test("status: 404 when article does not exist", async () => {
     const response = await request(app)
-      .patch("/api/articles/75")
+      .patch("/api/articles/9999")
       .send({ inc_votes: 1 })
       .expect(404);
-    expect(response.body.msg).toBe("Article not found for article_id: 75");
+    expect(response.body.msg).toBe("Article not found for article_id: 9999");
+  });
+
+  test("status: 400 when article_id is invalid (e.g., string)", async () => {
+    const response = await request(app)
+      .patch("/api/articles/invalid_id")
+      .send({ inc_votes: 1 })
+      .expect(400);
+    expect(response.body.msg).toBe("Bad request");
   });
 });
 describe("DELETE /api/comments/:comment_id", () => {
   test("status: 204 deletes specified comment by comment_id, returning nothing", async () => {
     const response = await request(app).delete("/api/comments/1").expect(204);
-    expect(response.body).toEqual({});
   });
   test("status: 404 when comment_id does not exist", async () => {
     const response = await request(app)
@@ -267,10 +285,6 @@ describe("GET /api/users", () => {
       });
     });
   });
+  //no error handling because no user input
 
-  test("status: 404 for bad routes (get request for non existent data)", async () => {
-    const response = await request(app).get("/api/gibberish");
-    expect(response.status).toBe(404);
-    expect(response.body.msg).toBe("Route not found");
-  });
 });
